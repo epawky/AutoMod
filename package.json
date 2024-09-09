@@ -1,0 +1,15 @@
+{
+    "name": "discord-reaction-bot",
+    "version": "1.0.0",
+    "description": "A simple Discord bot that reacts to messages with emojis.",
+    "main": "bot.js",
+    "scripts": {
+      "start": "node bot.js"
+    },
+    "author": "Eliza Aimone",
+    "license": "MIT",
+    "dependencies": {
+      "discord.js": "^14.0.0"
+    }
+  }
+  

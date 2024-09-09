@@ -1,0 +1,16 @@
+{
+    "extends": [
+      "config:base"
+    ],
+    "packageRules": [
+      {
+        "packagePatterns": ["^discord.js"],
+        "groupName": "discord.js packages",
+        "automerge": true
+      }
+    ],
+    "automerge": false,
+    "schedule": ["at any time"],
+    "labels": ["dependencies"]
+  }
+  
