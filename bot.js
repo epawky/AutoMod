@@ -1,5 +1,5 @@
 // bot.js
-require('dotenv').config();
+require('dotenv').config({ path: './production.env' });
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { addRole, removeRole, createPrivateThread } = require('./utils');  // Import utils
 const TOKEN = process.env.DISCORD_TOKEN;
