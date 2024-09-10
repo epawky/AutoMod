@@ -1,7 +1,7 @@
 // bot.js
 require('dotenv').config({ path: './production.env' });
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
-const { addRole, removeRole, createPrivateThread } = require('./utils');  // Import utils
+const { addRole, removeRole, createPrivateThread, isKentEmail } = require('./utils');  // Import utils
 const TOKEN = process.env.DISCORD_TOKEN;
 
 
@@ -23,8 +23,10 @@ const JUST_JOINED_ROLE_ID = '1283155306834301008';
 const READ_RULES_ROLE_ID = '1277685187248914548';
 const CAPO_ROLE_ID = '1277488575323308033';
 const INFORMATION_CHANNEL_ID = '1283160349834477706';
-const AUTOMOD_CHANNEL_ID = 'YOUR_AUTOMOD_CHANNEL_ID'; 
-const INTRODUCTIONS_CHANNEL_ID = 'YOUR_INTRODUCTIONS_CHANNEL_ID';
+const AUTOMOD_CHANNEL_ID = '1283184297980723291'; 
+const INTRODUCTIONS_CHANNEL_ID = '1277586348626149416';
+const ASSOCIATE_ROLE_ID = '1277679159065313443'; 
+const ELIGIBLE_TO_PLAY_ROLE_ID = '1278440811876581386';
 
 // Bot ready
 client.once('ready', () => {
@@ -54,23 +56,29 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 const email = emailMessage.content;
                 const automodChannel = guild.channels.cache.get(AUTOMOD_CHANNEL_ID);
 
-                if (email.endsWith('@kent.edu')) {
+                if (isKentEmail(email)) {
                     // Post email in automod channel
                     await automodChannel.send(`New user email: ${email} (Verified Kent.edu domain)`);
 
                     // Ask for chosen name
                     await thread.send('What name would you like to use as your nickname on the server?');
                     const nameCollector = thread.createMessageCollector({ max: 1, time: 60000 });
-                    
+
                     nameCollector.on('collect', async (nameMessage) => {
                         const chosenName = nameMessage.content;
 
                         // Update nickname
                         await member.setNickname(chosenName);
 
-                        // Send welcome message
-                        await thread.send(`Welcome to the server, ${chosenName}! Please post an introduction in the #introductions channel.`);
+                        // Manually add user to the introductions channel
                         const introductionsChannel = guild.channels.cache.get(INTRODUCTIONS_CHANNEL_ID);
+                        await introductionsChannel.permissionOverwrites.create(member, {
+                            VIEW_CHANNEL: true,  // Allow the user to view the channel
+                            SEND_MESSAGES: true,  // Allow the user to send messages
+                        });
+
+                        // Send welcome message
+                        await thread.send(`Welcome to the server, ${chosenName}! You now have access to the introductions channel. Please introduce yourself in #introductions.`);
                         await introductionsChannel.send(`Welcome, ${chosenName}! Please introduce yourself.`);
 
                         // Delete the thread
@@ -91,5 +99,23 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+// Listen for messages in the introductions channel
+client.on('messageCreate', async (message) => {
+    if (message.channel.id === INTRODUCTIONS_CHANNEL_ID && !message.author.bot) {
+        const member = message.guild.members.cache.get(message.author.id);
+
+        // Check if the message is more than 30 characters long
+        if (message.content.length > 30) {
+            // Assign the Associate role
+            await addRole(member, ASSOCIATE_ROLE_ID);
+
+            // Assign the Eligible to Play role after Associate
+            await addRole(member, ELIGIBLE_TO_PLAY_ROLE_ID);
+
+            // Send confirmation message
+            await message.channel.send(`Great introduction, ${member.user.tag}! You've been given the Associate and Eligible to Play roles.`);
+        }
+    }
+});
 // Attempt to log in using the token
 client.login(TOKEN);

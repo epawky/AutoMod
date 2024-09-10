@@ -1,74 +1,68 @@
 // utils.js
 
 /**
- * Adds a role to a member.
- * @param {GuildMember} member - The member to whom the role will be added.
+ * Adds a role to a guild member.
+ * @param {GuildMember} member - The guild member to whom the role will be added.
  * @param {string} roleId - The ID of the role to be added.
  */
 async function addRole(member, roleId) {
-    try {
-        const role = member.guild.roles.cache.get(roleId);
-        if (role) {
-            await member.roles.add(role);
-            console.log(`Added role ${role.name} to ${member.user.tag}`);
-        } else {
-            console.error('Role not found:', roleId);
-        }
-    } catch (error) {
-        console.error('Error adding role:', error);
+    const role = member.guild.roles.cache.get(roleId);
+    if (role) {
+        await member.roles.add(role);
+        console.log(`Added role ${role.name} to ${member.user.tag}`);
     }
 }
 
 /**
- * Removes a role from a member.
- * @param {GuildMember} member - The member from whom the role will be removed.
+ * Removes a role from a guild member.
+ * @param {GuildMember} member - The guild member from whom the role will be removed.
  * @param {string} roleId - The ID of the role to be removed.
  */
 async function removeRole(member, roleId) {
-    try {
-        const role = member.guild.roles.cache.get(roleId);
-        if (role && member.roles.cache.has(roleId)) {
-            await member.roles.remove(role);
-            console.log(`Removed role ${role.name} from ${member.user.tag}`);
-        } else {
-            console.error('Role not found or not assigned:', roleId);
-        }
-    } catch (error) {
-        console.error('Error removing role:', error);
+    const role = member.guild.roles.cache.get(roleId);
+    if (role && member.roles.cache.has(roleId)) {
+        await member.roles.remove(role);
+        console.log(`Removed role ${role.name} from ${member.user.tag}`);
     }
 }
 
 /**
- * Creates a private thread in a specific channel.
- * @param {GuildChannel} channel - The channel where the thread will be created.
+ * Creates a private thread in the given channel.
+ * @param {TextChannel} channel - The channel where the thread will be created.
  * @param {string} threadName - The name of the thread.
- * @param {User} user - The user to add to the thread.
- * @param {Role} role - The role (e.g., Capo) to add to the thread.
+ * @param {User} user - The user who will be added to the thread.
+ * @param {Role} role - The role to be added to the thread.
+ * @returns {ThreadChannel} - The created thread channel.
  */
 async function createPrivateThread(channel, threadName, user, role) {
-    try {
-        const thread = await channel.threads.create({
-            name: threadName,
-            autoArchiveDuration: 60, // Archive after 60 minutes of inactivity
-            type: 'GUILD_PRIVATE_THREAD',
-            invitable: false
-        });
+    const thread = await channel.threads.create({
+        name: threadName,
+        autoArchiveDuration: 60,  // Archive after 60 minutes of inactivity
+        type: 'GUILD_PRIVATE_THREAD',
+        invitable: false
+    });
 
-        await thread.members.add(user.id);
-        const capos = role.members.map(m => m.id);  // Get all members with the Capo role
-        for (const capoId of capos) {
-            await thread.members.add(capoId);
-        }
-
-        console.log(`Created private thread ${thread.name} for ${user.tag}`);
-        return thread;
-    } catch (error) {
-        console.error('Error creating private thread:', error);
+    await thread.members.add(user.id);
+    for (const member of role.members.values()) {
+        await thread.members.add(member.id);
     }
+
+    console.log(`Private thread created: ${thread.name} for ${user.tag}`);
+    return thread;
+}
+
+/**
+ * Checks if the given email is from the 'kent.edu' domain.
+ * @param {string} email - The email to check.
+ * @returns {boolean} - True if the email is from 'kent.edu', false otherwise.
+ */
+function isKentEmail(email) {
+    return email.endsWith('@kent.edu');
 }
 
 module.exports = {
     addRole,
     removeRole,
-    createPrivateThread
+    createPrivateThread,
+    isKentEmail
 };
