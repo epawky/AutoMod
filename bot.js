@@ -28,6 +28,32 @@ const INTRODUCTIONS_CHANNEL_ID = '1277586348626149416';
 const ASSOCIATE_ROLE_ID = '1277679159065313443'; 
 const ELIGIBLE_TO_PLAY_ROLE_ID = '1278440811876581386';
 const GENERAL_CHANNEL_ID = '1275098902743220290';
+const REACTION_ROLES_CHANNEL_ID = '1277586914194489476';
+const REACTION_ROLES_MESSAGE_ID = '1283197180500246591';
+
+// Role IDs for each emoji
+const ROLE_IDS = {
+    '🌀': '1277708338473210067',
+    '♂️': '1278440925164736614',
+    '🔵': '1278444964207923220',
+    '♀️': '1278440867178479751',
+    '🔴': '1278444929571487814',
+    '⚪': '1278440965991825544',
+    '🟢': '1278448920426446848',
+    '🌈': '1278441005128876214',
+    '❓': '1278441041653006399',
+    '🎓': '1278441435200360501',
+    '🎮': '1278441479475433613',
+    '💪': '1278441517769560155',
+    '🌙': '1278441566196863019',
+    '🔞': '1280275950004732006',
+    '🎤': '1283225982945333358',
+    '🖥️': '1283226049336840234',
+    '🎲': '1283226090537619476',
+    '🕹️': '1283226128831742012',
+    '📬': '1278450602879221781',
+    '📩': '1278450641181872211',
+    
 
 // Bot ready
 client.once('ready', () => {
@@ -145,6 +171,52 @@ client.on('messageCreate', async (message) => {
             await member.send('Hi! Your introduction message was a bit too short. A capo will manually approve your membership within 24 hours.');
         }
     }
+});
+
+const reactionRolesChannel = client.channels.cache.get(REACTION_ROLES_CHANNEL_ID);
+if (!reactionRolesChannel) {
+    console.log("Reaction roles channel not found!");
+    return;
+}
+
+// Fetch the existing reaction role message by its ID
+const reactionRoleMessage = await reactionRolesChannel.messages.fetch(REACTION_ROLES_MESSAGE_ID);
+if (!reactionRoleMessage) {
+    console.log("Reaction roles message not found!");
+    return;
+}
+
+// React to the message with the emojis (if they haven't been added yet)
+const emojis = Object.keys(ROLE_IDS);
+for (const emoji of emojis) {
+    if (!reactionRoleMessage.reactions.cache.has(emoji)) {
+        await reactionRoleMessage.react(emoji);
+    }
+}
+});
+
+// Event: User adds a reaction
+client.on('messageReactionAdd', async (reaction, user) => {
+if (reaction.message.id === REACTION_ROLES_MESSAGE_ID && !user.bot) {
+    const roleId = ROLE_IDS[reaction.emoji.name];
+    if (roleId) {
+        const guildMember = reaction.message.guild.members.cache.get(user.id);
+        await guildMember.roles.add(roleId);
+        console.log(`Added role ${roleId} to user ${user.tag}`);
+    }
+}
+});
+
+// Event: User removes a reaction
+client.on('messageReactionRemove', async (reaction, user) => {
+if (reaction.message.id === REACTION_ROLES_MESSAGE_ID && !user.bot) {
+    const roleId = ROLE_IDS[reaction.emoji.name];
+    if (roleId) {
+        const guildMember = reaction.message.guild.members.cache.get(user.id);
+        await guildMember.roles.remove(roleId);
+        console.log(`Removed role ${roleId} from user ${user.tag}`);
+    }
+}
 });
 // Attempt to log in using the token
 client.login(TOKEN);
