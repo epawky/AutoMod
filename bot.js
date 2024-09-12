@@ -52,7 +52,8 @@ const ROLE_IDS = {
     '🎲': '1283226090537619476',
     '🕹️': '1283226128831742012',
     '📬': '1278450602879221781',
-    '📩': '1278450641181872211',
+    '📩': '1278450641181872211'
+};
     
 
 // Bot ready
@@ -173,27 +174,39 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-const reactionRolesChannel = client.channels.cache.get(REACTION_ROLES_CHANNEL_ID);
-if (!reactionRolesChannel) {
-    console.log("Reaction roles channel not found!");
-    return;
-}
+// Ensure the function is async
+client.once('ready', async () => {
+    console.log(`Logged in as ${client.user.tag}`);
 
-// Fetch the existing reaction role message by its ID
-const reactionRoleMessage = await reactionRolesChannel.messages.fetch(REACTION_ROLES_MESSAGE_ID);
-if (!reactionRoleMessage) {
-    console.log("Reaction roles message not found!");
-    return;
-}
+    try {
+        // Fetch the reaction roles channel
+        const reactionRolesChannel = client.channels.cache.get(REACTION_ROLES_CHANNEL_ID);
+        if (!reactionRolesChannel) {
+            console.log("Reaction roles channel not found!");
+            return;
+        }
 
-// React to the message with the emojis (if they haven't been added yet)
-const emojis = Object.keys(ROLE_IDS);
-for (const emoji of emojis) {
-    if (!reactionRoleMessage.reactions.cache.has(emoji)) {
-        await reactionRoleMessage.react(emoji);
+        // Fetch the existing reaction role message by its ID
+        const reactionRoleMessage = await reactionRolesChannel.messages.fetch(REACTION_ROLES_MESSAGE_ID);
+        if (!reactionRoleMessage) {
+            console.log("Reaction roles message not found!");
+            return;
+        }
+
+        // React to the message with the emojis (if they haven't been added yet)
+        const emojis = Object.keys(ROLE_IDS);
+        for (const emoji of emojis) {
+            if (!reactionRoleMessage.reactions.cache.has(emoji)) {
+                await reactionRoleMessage.react(emoji);
+            }
+        }
+    } catch (error) {
+        console.error('Error during reaction role setup:', error);
     }
-}
 });
+
+
+
 
 // Event: User adds a reaction
 client.on('messageReactionAdd', async (reaction, user) => {
@@ -207,16 +220,27 @@ if (reaction.message.id === REACTION_ROLES_MESSAGE_ID && !user.bot) {
 }
 });
 
-// Event: User removes a reaction
 client.on('messageReactionRemove', async (reaction, user) => {
-if (reaction.message.id === REACTION_ROLES_MESSAGE_ID && !user.bot) {
-    const roleId = ROLE_IDS[reaction.emoji.name];
-    if (roleId) {
-        const guildMember = reaction.message.guild.members.cache.get(user.id);
-        await guildMember.roles.remove(roleId);
-        console.log(`Removed role ${roleId} from user ${user.tag}`);
+    if (reaction.message.id === REACTION_ROLES_MESSAGE_ID && !user.bot) {
+        try {
+            const guild = reaction.message.guild;
+
+            // Fetch the member if not cached
+            let guildMember = guild.members.cache.get(user.id);
+            if (!guildMember) {
+                guildMember = await guild.members.fetch(user.id);  // Fetch member if not cached
+            }
+
+            const roleId = ROLE_IDS[reaction.emoji.name];
+            if (roleId && guildMember) {
+                await guildMember.roles.remove(roleId);
+                console.log(`Removed role ${roleId} from user ${user.tag}`);
+            }
+        } catch (error) {
+            console.error('Error in messageReactionRemove:', error);
+        }
     }
-}
 });
+
 // Attempt to log in using the token
 client.login(TOKEN);
