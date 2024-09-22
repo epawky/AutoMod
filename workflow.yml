@@ -1,0 +1,36 @@
+name: Deploy Discord Bot to Heroku
+
+on:
+  push:
+    branches:
+      - main  # This will trigger the workflow on pushes to the 'main' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # Runs on the latest Ubuntu environment
+
+    steps:
+      - name: Checkout code  # Checkout the latest code from the repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js  # Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies  # Install npm dependencies
+        run: npm install
+
+      - name: Create .env file  # Create the .env file with your GitHub Secrets
+        run: |
+          echo APP_ID=${{ secrets.APP_ID }} >> .env
+          echo DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} >> .env
+          echo PUBLIC_KEY=${{ secrets.PUBLIC_KEY }} >> .env
+
+      - name: Deploy to Heroku  # Deploy to Heroku using GitHub Secrets
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku git:remote -a your-heroku-app-name
+          git push heroku main
+
